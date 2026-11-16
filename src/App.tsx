@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import {
   ArrowRight, ArrowUpRight, BellRing, CalendarCheck2, Check, CheckCircle2,
   ChevronDown, CircleHelp, ClipboardCheck, Clock3, FileCheck2, FileText,
@@ -15,14 +15,15 @@ type FormState = {
   challenge: string;
   consent: boolean;
   website: string;
+  turnstileToken?: string;
 };
 
 const initial: FormState = {
   fullName: '', email: '', company: '', city: '', teamSize: '', challenge: '', consent: false, website: '',
 };
 
-type PublicConfig = { contactEmail: string; registrationEnabled: boolean };
-const defaultConfig: PublicConfig = { contactEmail: '', registrationEnabled: false };
+type PublicConfig = { contactEmail: string; registrationEnabled: boolean; turnstileSiteKey: string };
+const defaultConfig: PublicConfig = { contactEmail: '', registrationEnabled: false, turnstileSiteKey: '' };
 
 const features = [
   { Icon: CalendarCheck2, label: 'Planification préventive', text: 'Une vision claire des visites à réaliser pour chaque contrat et chaque site.', tag: 'Évitez les oublis' },
@@ -83,10 +84,57 @@ function DashboardPreview() {
   );
 }
 
-function EarlyAccessForm({ canCollect }: { canCollect: boolean }) {
+
+type TurnstileApi = {
+  render(element: HTMLElement, options: {
+    sitekey: string;
+    callback: (token: string) => void;
+    'expired-callback': () => void;
+    'error-callback': () => void;
+  }): string;
+  remove(id: string): void;
+};
+
+function TurnstileChallenge({ siteKey, onToken }: { siteKey: string; onToken: (token: string) => void }) {
+  const target = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    let disposed = false;
+    let widgetId: string | undefined;
+    const turnstile = () => (window as Window & { turnstile?: TurnstileApi }).turnstile;
+    const render = () => {
+      if (disposed || !target.current || !turnstile() || widgetId) return;
+      widgetId = turnstile()!.render(target.current, {
+        sitekey: siteKey,
+        callback: onToken,
+        'expired-callback': () => onToken(''),
+        'error-callback': () => onToken(''),
+      });
+    };
+    let script = document.querySelector<HTMLScriptElement>('script[data-maintiflow-turnstile]');
+    if (!script) {
+      script = document.createElement('script');
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      script.async = true;
+      script.setAttribute('data-maintiflow-turnstile', '');
+      document.head.appendChild(script);
+    }
+    script.addEventListener('load', render);
+    render();
+    return () => {
+      disposed = true;
+      script?.removeEventListener('load', render);
+      if (widgetId && turnstile()) turnstile()!.remove(widgetId);
+    };
+  }, [siteKey, onToken]);
+  return <div className="turnstile-row"><div ref={target}/><p>Vérification de sécurité avant l’envoi.</p></div>;
+}
+
+function EarlyAccessForm({ canCollect, turnstileSiteKey }: { canCollect: boolean; turnstileSiteKey: string }) {
   const [values, setValues] = useState<FormState>(initial);
   const [status, setStatus] = useState<'idle'|'sending'|'success'|'error'>('idle');
   const [message, setMessage] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileReset, setTurnstileReset] = useState(0);
 
   function change<K extends keyof FormState>(field: K, value: FormState[K]) {
     setValues(prev => ({...prev, [field]: value}));
@@ -94,14 +142,14 @@ function EarlyAccessForm({ canCollect }: { canCollect: boolean }) {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!canCollect) return;
+    if (!canCollect || (turnstileSiteKey && !turnstileToken)) return;
     setStatus('sending');
     setMessage('');
     try {
       const response = await fetch('/api/early-access', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(values),
+        body: JSON.stringify({ ...values, turnstileToken }),
       });
       const result = await response.json() as {ok?: boolean; message?: string};
       if (!response.ok || !result.ok) throw new Error(result.message || 'Impossible de transmettre votre demande.');
@@ -110,6 +158,11 @@ function EarlyAccessForm({ canCollect }: { canCollect: boolean }) {
     } catch (error) {
       setStatus('error');
       setMessage(error instanceof Error ? error.message : 'Erreur inattendue. Veuillez réessayer.');
+    } finally {
+      if (turnstileSiteKey) {
+        setTurnstileToken('');
+        setTurnstileReset(v => v + 1);
+      }
     }
   }
 
@@ -129,10 +182,11 @@ function EarlyAccessForm({ canCollect }: { canCollect: boolean }) {
             <label>Votre principal défi <span>*</span><select required name="challenge" value={values.challenge} onChange={e=>change('challenge',e.target.value)}><option value="">Sélectionner</option><option value="planning">Planifier les visites</option><option value="contracts">Suivre les contrats</option><option value="reports">Préparer les rapports</option><option value="billing">Suivre la facturation</option><option value="other">Autre</option></select></label>
           </div>
           <div className="honey" aria-hidden="true"><label>Votre site web<input name="website" tabIndex={-1} autoComplete="off" value={values.website} onChange={e=>change('website',e.target.value)}/></label></div>
+          {canCollect && turnstileSiteKey && <TurnstileChallenge key={turnstileReset} siteKey={turnstileSiteKey} onToken={setTurnstileToken}/>}
           <label className="consent"><input type="checkbox" required checked={values.consent} onChange={e=>change('consent',e.target.checked)}/><span>J’accepte que mes données soient utilisées uniquement pour traiter ma demande d’accès pilote. <a href="#confidentialite">En savoir plus</a>.</span></label>
           {!canCollect && <div className="form-unavailable" role="status">Les demandes seront bientôt ouvertes. L’adresse de contact pour la confidentialité doit d’abord être configurée.</div>}
           {status === 'error' && <div className="form-error" role="alert">{message}</div>}
-          <button type="submit" className="btn btn-primary btn-submit" disabled={status==='sending'||!canCollect}>{status==='sending'?'Envoi en cours…':'Demander mon accès pilote'} <ArrowRight size={17}/></button>
+          <button type="submit" className="btn btn-primary btn-submit" disabled={status==='sending'||!canCollect||(Boolean(turnstileSiteKey)&&!turnstileToken)}>{status==='sending'?'Envoi en cours…':'Demander mon accès pilote'} <ArrowRight size={17}/></button>
           <p className="form-fine"><LockKeyhole size={13}/> Pas de paiement. Aucun démarchage téléphonique. Réponse par email uniquement.</p>
         </form>
       )}
@@ -151,7 +205,7 @@ export default function App() {
       })
       .then(data => {
         if (!controller.signal.aborted && typeof data.contactEmail === 'string') {
-          setConfig({ contactEmail: data.contactEmail, registrationEnabled: data.registrationEnabled === true });
+          setConfig({ contactEmail: data.contactEmail, registrationEnabled: data.registrationEnabled === true, turnstileSiteKey: typeof data.turnstileSiteKey === 'string' ? data.turnstileSiteKey : '' });
         }
       })
       .catch(() => { /* Fail closed: do not accept registrations without backend configuration. */ });
@@ -218,11 +272,11 @@ export default function App() {
               <article className="price-card featured"><div className="price-top"><span>BUSINESS</span><span className="price-badge">Pour les équipes en croissance</span></div><h3>Pour piloter plusieurs contrats.</h3><div className="price"><strong>1 199 DH</strong><span>/ mois</span></div><p className="price-sub">Tarif envisagé · jusqu’à 20 techniciens</p><ul><li><Check size={17}/> Tout Starter</li><li><Check size={17}/> Suivi des échéances</li><li><Check size={17}/> Vision par contrat et par site</li></ul><a className="btn btn-primary price-btn" href="#inscription">Demander un accès pilote <ArrowRight size={16}/></a></article></div>
           </div></section>
 
-          <section className="waitlist-section section-pad" aria-labelledby="waitlist-title"><div className="container waitlist-grid"><div className="waitlist-copy"><span className="eyebrow light">PREMIÈRES ENTREPRISES PILOTES</span><h2 id="waitlist-title">Construisons un outil qui <em>répond à votre réalité.</em></h2><p>MaintiFlow est encore au stade de validation. Votre retour peut influencer les premières fonctions et vous permettre de découvrir le produit en avant-première.</p><div className="waitlist-points"><div><span><Check size={17}/></span> Un échange par email, sans appel imprévu</div><div><span><Check size={17}/></span> Pas d’engagement ni de paiement à l’inscription</div><div><span><Check size={17}/></span> Un produit à construire avec les professionnels du secteur</div></div><div className="waitlist-decor"><RefreshCw size={26}/><span>Du contrat au terrain, et retour.</span></div></div><EarlyAccessForm canCollect={canCollect} /></div></section>
+          <section className="waitlist-section section-pad" aria-labelledby="waitlist-title"><div className="container waitlist-grid"><div className="waitlist-copy"><span className="eyebrow light">PREMIÈRES ENTREPRISES PILOTES</span><h2 id="waitlist-title">Construisons un outil qui <em>répond à votre réalité.</em></h2><p>MaintiFlow est encore au stade de validation. Votre retour peut influencer les premières fonctions et vous permettre de découvrir le produit en avant-première.</p><div className="waitlist-points"><div><span><Check size={17}/></span> Un échange par email, sans appel imprévu</div><div><span><Check size={17}/></span> Pas d’engagement ni de paiement à l’inscription</div><div><span><Check size={17}/></span> Un produit à construire avec les professionnels du secteur</div></div><div className="waitlist-decor"><RefreshCw size={26}/><span>Du contrat au terrain, et retour.</span></div></div><EarlyAccessForm canCollect={canCollect} turnstileSiteKey={config.turnstileSiteKey} /></div></section>
 
           <section className="faq-section section-pad" id="faq" aria-labelledby="faq-title"><div className="container faq-grid"><div><span className="eyebrow">QUESTIONS FRÉQUENTES</span><h2 id="faq-title">L’essentiel,<br/><span>sans détour.</span></h2><p>Tout ce qu’il faut savoir sur ce projet en cours de validation.</p></div><div className="faq-list">{faqs.map(({q,a})=><details key={q}><summary>{q}<span><ChevronDown size={19}/></span></summary><p>{a}</p></details>)}</div></div></section>
         </main>
-        <footer className="footer" id="confidentialite"><div className="container"><div className="footer-row"><Logo/><span>La maintenance mérite mieux que des fichiers éparpillés.</span><a href="#accueil">Haut de page ↑</a></div><div className="privacy"><h3>Confidentialité & données personnelles</h3><p>Les informations du formulaire sont utilisées uniquement pour examiner votre demande d’accès pilote et vous répondre par email. Elles ne sont pas destinées à la revente ni à l’envoi de newsletters sans votre consentement distinct. Vous pouvez demander l’accès ou la suppression de vos données à {canCollect?<a href={`mailto:${contactEmail}`}>{contactEmail}</a>:<strong>l’adresse de contact à configurer avant ouverture des inscriptions</strong>}. Les données sont stockées sur l’infrastructure Cloudflare une fois le formulaire activé.</p><p>MaintiFlow est un nom de projet. Ce site présente une solution en préparation, pas un service déjà commercialisé.</p></div><div className="footer-bottom"><span>© {new Date().getFullYear()} MaintiFlow — Projet en validation au Maroc.</span><span>Fait pour les équipes qui font avancer le terrain.</span></div></div></footer>
+        <footer className="footer" id="confidentialite"><div className="container"><div className="footer-row"><Logo/><span>La maintenance mérite mieux que des fichiers éparpillés.</span><a href="#accueil">Haut de page ↑</a></div><div className="privacy"><h3>Confidentialité & données personnelles</h3><p>MaintiFlow est un projet en phase de validation au Maroc. Les données du formulaire (nom, email, entreprise, ville, taille d’équipe, principal défi) sont collectées uniquement pour étudier votre demande d’accès pilote et vous répondre. Pas de revente ni d’inscription automatique à une newsletter.</p><p>Les demandes sont enregistrées sur Cloudflare D1 et conservées au maximum 180 jours, avec une suppression automatique quotidienne prévue. Les alertes email, lorsqu’elles sont activées, ne contiennent que la référence de l’inscription, sans coordonnées personnelles. La conservation et l’accès restent soumis aux obligations légales applicables.</p><p>Vous pouvez demander l’accès, la rectification ou la suppression de vos données en contactant {canCollect?<a href={`mailto:${contactEmail}`}>{contactEmail}</a>:<strong>l’adresse de contact à configurer avant ouverture des inscriptions</strong>}. Une vérification raisonnable de votre identité peut être demandée. L’identité légale du responsable du traitement et les formalités CNDP applicables doivent être finalisées avant toute campagne commerciale.</p><p>MaintiFlow est un nom de projet. Ce site présente une solution en préparation, pas un service déjà commercialisé.</p></div><div className="footer-bottom"><span>© {new Date().getFullYear()} MaintiFlow — Projet en validation au Maroc.</span><span>Fait pour les équipes qui font avancer le terrain.</span></div></div></footer>
       </div>
     </>
   );
