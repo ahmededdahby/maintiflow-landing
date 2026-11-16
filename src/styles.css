@@ -94,3 +94,5 @@ body { font-size: 16px; line-height: 1.55; }
 
 /* Restore the dark hero backdrop after a legacy CSS override. */
 .site-shell { background: linear-gradient(to bottom, #071e27 0px, #071e27 var(--hero-dark-height), #ffffff var(--hero-dark-height), #ffffff 100%); }
+
+.turnstile-row{display:flex;flex-direction:column;gap:6px;margin:14px 0;color:#365d53;font-size:12px}.turnstile-row p{margin:0}.privacy p{font-size:12px;line-height:1.85}

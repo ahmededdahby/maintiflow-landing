@@ -15,10 +15,10 @@ function req(path, method = 'GET') {
 }
 test('API config denies signups until D1 and contact email configured', async () => {
   const unavailable = await worker.fetch(req('/api/config'), { ASSETS: assets });
-  assert.deepEqual(await unavailable.json(), { contactEmail: '', registrationEnabled: false });
+  assert.deepEqual(await unavailable.json(), { contactEmail: '', registrationEnabled: false, turnstileSiteKey: '' });
   assert.equal(unavailable.headers.get('cache-control'), 'no-store');
   const configured = await worker.fetch(req('/api/config'), { ASSETS: assets, DB: {}, CONTACT_EMAIL: ' contact@maintiflow.ma ' });
-  assert.deepEqual(await configured.json(), { contactEmail: 'contact@maintiflow.ma', registrationEnabled: true });
+  assert.deepEqual(await configured.json(), { contactEmail: 'contact@maintiflow.ma', registrationEnabled: true, turnstileSiteKey: '' });
 });
 test('API handles unknown routes and wrong methods', async () => {
   assert.equal((await worker.fetch(req('/api/missing'), { ASSETS: assets })).status, 404);
@@ -28,4 +28,22 @@ test('API handles unknown routes and wrong methods', async () => {
 test('non-API requests delegate to static assets', async () => {
   const res = await worker.fetch(req('/pricing'), { ASSETS: assets });
   assert.equal(await res.text(), 'site html');
+});
+
+test('half configured Turnstile blocks registration', async () => {
+  const response = await worker.fetch(req('/api/config'), {
+    ASSETS: assets, DB: {}, CONTACT_EMAIL: 'maintiflow.contact@gmail.com', TURNSTILE_SITE_KEY: 'site-key',
+  });
+  assert.deepEqual(await response.json(), {
+    contactEmail: 'maintiflow.contact@gmail.com', registrationEnabled: false, turnstileSiteKey: '',
+  });
+});
+test('scheduled cleanup deletes only leads over 180 days old', async () => {
+  const sql = [];
+  await worker.scheduled({}, {
+    DB: { prepare(query) { sql.push(query); return { run: async () => ({}) }; } },
+  });
+  assert.equal(sql.length, 1);
+  assert.match(sql[0], /DELETE FROM early_access/);
+  assert.match(sql[0], /-180 days/);
 });
