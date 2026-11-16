@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import {
   ArrowRight, ArrowUpRight, BellRing, CalendarCheck2, Check, CheckCircle2,
   ChevronDown, CircleHelp, ClipboardCheck, Clock3, FileCheck2, FileText,
@@ -21,8 +21,8 @@ const initial: FormState = {
   fullName: '', email: '', company: '', city: '', teamSize: '', challenge: '', consent: false, website: '',
 };
 
-const contactEmail = import.meta.env.VITE_CONTACT_EMAIL?.trim() || '';
-const canCollect = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail);
+type PublicConfig = { contactEmail: string; registrationEnabled: boolean };
+const defaultConfig: PublicConfig = { contactEmail: '', registrationEnabled: false };
 
 const features = [
   { Icon: CalendarCheck2, label: 'Planification préventive', text: 'Une vision claire des visites à réaliser pour chaque contrat et chaque site.', tag: 'Évitez les oublis' },
@@ -83,7 +83,7 @@ function DashboardPreview() {
   );
 }
 
-function EarlyAccessForm() {
+function EarlyAccessForm({ canCollect }: { canCollect: boolean }) {
   const [values, setValues] = useState<FormState>(initial);
   const [status, setStatus] = useState<'idle'|'sending'|'success'|'error'>('idle');
   const [message, setMessage] = useState('');
@@ -141,6 +141,25 @@ function EarlyAccessForm() {
 }
 
 export default function App() {
+  const [config, setConfig] = useState<PublicConfig>(defaultConfig);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch('/api/config', { cache: 'no-store', signal: controller.signal })
+      .then(async response => {
+        if (!response.ok) throw new Error('Configuration unavailable');
+        return response.json() as Promise<PublicConfig>;
+      })
+      .then(data => {
+        if (!controller.signal.aborted && typeof data.contactEmail === 'string') {
+          setConfig({ contactEmail: data.contactEmail, registrationEnabled: data.registrationEnabled === true });
+        }
+      })
+      .catch(() => { /* Fail closed: do not accept registrations without backend configuration. */ });
+    return () => controller.abort();
+  }, []);
+  const contactEmail = config.contactEmail;
+  const canCollect = config.registrationEnabled && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail);
+
   const [menuOpen, setMenuOpen] = useState(false);
   return (
     <>
@@ -199,7 +218,7 @@ export default function App() {
               <article className="price-card featured"><div className="price-top"><span>BUSINESS</span><span className="price-badge">Pour les équipes en croissance</span></div><h3>Pour piloter plusieurs contrats.</h3><div className="price"><strong>1 199 DH</strong><span>/ mois</span></div><p className="price-sub">Tarif envisagé · jusqu’à 20 techniciens</p><ul><li><Check size={17}/> Tout Starter</li><li><Check size={17}/> Suivi des échéances</li><li><Check size={17}/> Vision par contrat et par site</li></ul><a className="btn btn-primary price-btn" href="#inscription">Demander un accès pilote <ArrowRight size={16}/></a></article></div>
           </div></section>
 
-          <section className="waitlist-section section-pad" aria-labelledby="waitlist-title"><div className="container waitlist-grid"><div className="waitlist-copy"><span className="eyebrow light">PREMIÈRES ENTREPRISES PILOTES</span><h2 id="waitlist-title">Construisons un outil qui <em>répond à votre réalité.</em></h2><p>MaintiFlow est encore au stade de validation. Votre retour peut influencer les premières fonctions et vous permettre de découvrir le produit en avant-première.</p><div className="waitlist-points"><div><span><Check size={17}/></span> Un échange par email, sans appel imprévu</div><div><span><Check size={17}/></span> Pas d’engagement ni de paiement à l’inscription</div><div><span><Check size={17}/></span> Un produit à construire avec les professionnels du secteur</div></div><div className="waitlist-decor"><RefreshCw size={26}/><span>Du contrat au terrain, et retour.</span></div></div><EarlyAccessForm /></div></section>
+          <section className="waitlist-section section-pad" aria-labelledby="waitlist-title"><div className="container waitlist-grid"><div className="waitlist-copy"><span className="eyebrow light">PREMIÈRES ENTREPRISES PILOTES</span><h2 id="waitlist-title">Construisons un outil qui <em>répond à votre réalité.</em></h2><p>MaintiFlow est encore au stade de validation. Votre retour peut influencer les premières fonctions et vous permettre de découvrir le produit en avant-première.</p><div className="waitlist-points"><div><span><Check size={17}/></span> Un échange par email, sans appel imprévu</div><div><span><Check size={17}/></span> Pas d’engagement ni de paiement à l’inscription</div><div><span><Check size={17}/></span> Un produit à construire avec les professionnels du secteur</div></div><div className="waitlist-decor"><RefreshCw size={26}/><span>Du contrat au terrain, et retour.</span></div></div><EarlyAccessForm canCollect={canCollect} /></div></section>
 
           <section className="faq-section section-pad" id="faq" aria-labelledby="faq-title"><div className="container faq-grid"><div><span className="eyebrow">QUESTIONS FRÉQUENTES</span><h2 id="faq-title">L’essentiel,<br/><span>sans détour.</span></h2><p>Tout ce qu’il faut savoir sur ce projet en cours de validation.</p></div><div className="faq-list">{faqs.map(({q,a})=><details key={q}><summary>{q}<span><ChevronDown size={19}/></span></summary><p>{a}</p></details>)}</div></div></section>
         </main>

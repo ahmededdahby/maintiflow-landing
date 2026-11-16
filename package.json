@@ -10,7 +10,8 @@
     "check": "npm run build && npm run typecheck:api && npm test",
     "test": "node --test tests/*.test.cjs",
     "preview": "vite preview",
-    "dev:pages": "npm run build && wrangler pages dev dist --d1=DB"
+    "dev:worker": "npm run build && wrangler dev",
+    "deploy:worker": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

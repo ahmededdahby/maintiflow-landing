@@ -1,5 +1,6 @@
 interface Env {
-  DB: D1Database;
+  DB?: D1Database;
+  CONTACT_EMAIL?: string;
 }
 
 type LeadPayload = {
@@ -18,7 +19,7 @@ const validChallenges = new Set(['planning', 'contracts', 'reports', 'billing', 
 const isText = (value: unknown, min: number, max: number): value is string =>
   typeof value === 'string' && value.trim().length >= min && value.trim().length <= max;
 
-export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+export async function handleEarlyAccess(request: Request, env: Env): Promise<Response> {
   const origin = request.headers.get('Origin');
   if (origin && origin !== new URL(request.url).origin) {
     return Response.json({ ok: false, message: 'Origine non autorisée.' }, { status: 403 });
@@ -59,7 +60,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     return Response.json({ ok: false, message: 'Veuillez vérifier les champs et le consentement.' }, { status: 400 });
   }
 
-  if (!env.DB) {
+  if (!env.DB || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((env.CONTACT_EMAIL ?? '').trim())) {
     // Critical: never claim a lead was stored when the D1 binding is absent.
     return Response.json({ ok: false, message: 'Les inscriptions ne sont pas encore disponibles. Réessayez plus tard.' }, { status: 503 });
   }
@@ -87,4 +88,6 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     console.error('Lead registration failed:', error instanceof Error ? error.name : 'unknown');
     return Response.json({ ok: false, message: 'Une erreur technique est survenue. Veuillez réessayer.' }, { status: 500 });
   }
-};
+}
+
+export const onRequestPost: PagesFunction<Env> = ({ request, env }) => handleEarlyAccess(request, env);
