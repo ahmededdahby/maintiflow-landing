@@ -1,0 +1,29 @@
+{
+  "name": "maintiflow-landing",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "typecheck:api": "tsc -p tsconfig.functions.json --noEmit",
+    "check": "npm run build && npm run typecheck:api && npm test",
+    "test": "node --test tests/*.test.cjs",
+    "preview": "vite preview",
+    "dev:pages": "npm run build && wrangler pages dev dist --d1=DB"
+  },
+  "dependencies": {
+    "lucide-react": "^0.468.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241127.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.4.1",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.5",
+    "wrangler": "^4.0.0"
+  }
+}
