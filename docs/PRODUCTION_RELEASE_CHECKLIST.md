@@ -46,6 +46,7 @@ Official: https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-l
 
 ## 5. Retention and lead hygiene
 - [x] Source has a daily 03:17 UTC scheduled handler deleting `early_access` leads older than 180 days.
+- [x] Draft PR #4 adds a privacy-safe `Lead retention cleanup completed` Workers Log with aggregate `deletedRows` (no lead PII), covered by an automated test. Existing production handler will not emit this new log until the draft PR is deployed.
 - [x] Operator confirmed the production Worker shows one trigger with cron `17 3 * * *` (daily 03:17 UTC).
 - [x] Operator confirms Cloudflare Worker Observability / Workers Logs was enabled on 17 Nov 2026.
 - [ ] Inspect Cron Events or Workers Logs for a **successful** scheduled invocation; enabling logs alone does not prove cleanup execution. Cloudflare dashboard: Worker → Settings → Trigger Events → View events (past cron), or Worker → Observability → Logs (new event records).
