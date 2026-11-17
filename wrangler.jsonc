@@ -4,6 +4,13 @@
   "main": "./worker/index.ts",
   "compatibility_date": "2026-11-16",
   "keep_vars": true,
+  "ratelimits": [
+    {
+      "name": "SIGNUP_RATE_LIMIT",
+      "namespace_id": "82341763",
+      "simple": { "limit": 10, "period": 60 }
+    }
+  ],
   "triggers": { "crons": ["17 3 * * *"] },
   "assets": {
     "directory": "./dist",
