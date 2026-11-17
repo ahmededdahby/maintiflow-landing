@@ -19,7 +19,7 @@ test('new lead sends a PII-minimized asynchronous notification when configured',
   globalThis.fetch=async (url,options)=>{outbound.push({url,options});return Response.json({id:'email-id'})};
   try {
     const DB=db();const response=await mod.handleEarlyAccess(req(lead),{
-      DB,CONTACT_EMAIL:'maintiflow.contact@gmail.com',RESEND_API_KEY:'fake-key',RESEND_FROM:'MaintiFlow <onboarding@resend.dev>'
+      DB,CONTACT_EMAIL:'maintiflow.contact@gmail.com',PRIVACY_REVIEW_COMPLETE:'true',RESEND_API_KEY:'fake-key',RESEND_FROM:'MaintiFlow <onboarding@resend.dev>'
     },{waitUntil(p){pending.push(p)}});
     assert.equal(response.status,201);assert.equal(DB.inserts.length,1);assert.equal(pending.length,1);
     await Promise.all(pending);assert.equal(outbound.length,1);
@@ -32,7 +32,7 @@ test('new lead sends a PII-minimized asynchronous notification when configured',
 test('Turnstile rejects missing tokens', async () => {
   const DB=db();
   const response=await mod.handleEarlyAccess(req(lead),{
-    DB,CONTACT_EMAIL:'maintiflow.contact@gmail.com',TURNSTILE_SITE_KEY:'site',TURNSTILE_SECRET_KEY:'secret'
+    DB,CONTACT_EMAIL:'maintiflow.contact@gmail.com',PRIVACY_REVIEW_COMPLETE:'true',TURNSTILE_SITE_KEY:'site',TURNSTILE_SECRET_KEY:'secret'
   });
   assert.equal(response.status,400);assert.equal(DB.inserts.length,0);
 });
@@ -41,7 +41,7 @@ test('Turnstile validates hostname on success', async () => {
   globalThis.fetch=async ()=>Response.json({success:true,hostname:'maintiflow-landing.ahdahby.workers.dev'});
   try {
     const response=await mod.handleEarlyAccess(req({...lead,turnstileToken:'valid-token'}),{
-      DB,CONTACT_EMAIL:'maintiflow.contact@gmail.com',TURNSTILE_SITE_KEY:'site',TURNSTILE_SECRET_KEY:'secret'
+      DB,CONTACT_EMAIL:'maintiflow.contact@gmail.com',PRIVACY_REVIEW_COMPLETE:'true',TURNSTILE_SITE_KEY:'site',TURNSTILE_SECRET_KEY:'secret'
     });
     assert.equal(response.status,201);assert.equal(DB.inserts.length,1);
   } finally {globalThis.fetch=original}
