@@ -12,10 +12,7 @@ Updated 17 Nov 2026. The product is **in validation**, not a finished SaaS. This
 - [x] Owner states they operate as a **natural person**, without a registered company.
 - [x] Owner states they received the relevant CNDP paperwork; reference/scope/transfer approval not independently verified.
 - [ ] Keep CNDP registration/receipt, applicable foreign-transfer record, processing-country information and cloud processor terms in a **private** document folder, not the repo.
-- [x] Operator pasted the exact **live notice** and confirmed it still says identity and CNDP formalities "doivent être finalisées"; it does **not** include actual controller identity/filing reference. Previous claim of finalized publication was mistaken.
-- [x] Draft PR #4 source now supports public, runtime-configured identification, CNDP status/reference, and transfer disclosures instead of hardcoding these details into GitHub.
-- [ ] In production Worker **Variables and Secrets** configure `PUBLIC_CONTROLLER_IDENTITY`, `PUBLIC_CNDP_DISCLOSURE`, `PUBLIC_TRANSFER_DISCLOSURE` as public text variables with legally verified wording. Never invent a number or place an identity document in the public repo. The future version intentionally **pauses registrations** until all three are present.
-- [ ] Confirm the privacy footer displayed to visitors contains the correct natural-person legal identity, required contact details, CNDP reference/status, and truthful relevant hosting/transfers. The current live notice is not yet final. Review against CNDP paperwork before merging/deploying.
+- [ ] **Operator reports final notice is published, but live page couldn't be fetched and GitHub footer still contains outdated identity wording:** reconcile the deployed page/source; replace the published footer sentence about identity "must be finalized" with the **real and accurately stated controller identity**, legal contact and applicable filing reference. Review final text against CNDP paperwork; never invent identifiers or copy private ID docs into this public repo.
 - [ ] Confirm the actual Cloudflare D1 hosting locations, Resend processing and backup/retention implications fit the filed transfer/notification scope.
 - [ ] Confirm `PRIVACY_REVIEW_COMPLETE=true` matches the real completed review; presence of the variable is **not** independent proof of compliance.
 - [ ] Review privacy requests workflow (access, correction, deletion, opt-out) for `maintiflow.contact@gmail.com` and response ownership.
@@ -69,3 +66,8 @@ Targets (not promises): 5 new genuine opt-ins excluding tests; 2 discovery conve
 - If D1 binding disappears, do **not** create a new DB; restore the existing binding to `maintiflow-leads`.
 - If new rate limit accidentally blocks valid signups, check trusted CF-Connecting-IP header and binding configuration; revert the deployment to the last known good version, preserving D1.
 - If data protection or abuse issues arise, set `PRIVACY_REVIEW_COMPLETE` to another value or remove it and save/deploy to pause signup while keeping static pages alive.
+
+## Operator decision — no new public-disclosure runtime variables (17 Nov 2026)
+The operator explicitly declined the proposed `PUBLIC_CONTROLLER_IDENTITY`, `PUBLIC_CNDP_DISCLOSURE`, and `PUBLIC_TRANSFER_DISCLOSURE` runtime variables. The extra deployment/signup gate introduced after commit `c3b87296` has been **reverted from this draft branch**. The original `PRIVACY_REVIEW_COMPLETE` check remains in effect, alongside Turnstile and the draft rate limiter.
+
+**This technical rollback is not a determination of legal compliance.** The actual live footer still states the controller's legal identity and applicable CNDP formalities need finalization, and the controller/transfer details have not been independently verified. Issue #1 remains open. Do not claim that this waiver completes privacy compliance or removes legal obligations. No customer records, private IDs or filing references were committed to this repository.

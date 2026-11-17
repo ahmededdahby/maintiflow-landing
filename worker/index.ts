@@ -5,9 +5,6 @@ type Env = {
   DB?: D1Database;
   SIGNUP_RATE_LIMIT?: { limit(input: { key: string }): Promise<{ success: boolean }> };
   CONTACT_EMAIL?: string;
-  PUBLIC_CONTROLLER_IDENTITY?: string;
-  PUBLIC_CNDP_DISCLOSURE?: string;
-  PUBLIC_TRANSFER_DISCLOSURE?: string;
   PRIVACY_REVIEW_COMPLETE?: string;
   RESEND_API_KEY?: string;
   RESEND_FROM?: string;
@@ -16,10 +13,6 @@ type Env = {
 };
 
 const emailIsValid = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-const legalText = (text: string | undefined, max: number) => {
-  const value = (text ?? '').trim();
-  return value.length >= 3 && value.length <= max ? value : '';
-};
 
 export default {
   async fetch(request: Request, env: Env, context: ExecutionContext): Promise<Response> {
@@ -30,18 +23,11 @@ export default {
       }
       const configuredEmail = (env.CONTACT_EMAIL ?? '').trim();
       const contactEmail = emailIsValid(configuredEmail) ? configuredEmail : '';
-      const privacyControllerIdentity = legalText(env.PUBLIC_CONTROLLER_IDENTITY, 240);
-      const privacyCndpDisclosure = legalText(env.PUBLIC_CNDP_DISCLOSURE, 420);
-      const privacyTransferDisclosure = legalText(env.PUBLIC_TRANSFER_DISCLOSURE, 420);
-      const privacyNoticeReady = Boolean(privacyControllerIdentity && privacyCndpDisclosure && privacyTransferDisclosure);
       const hasSiteKey = Boolean(env.TURNSTILE_SITE_KEY?.trim());
       const hasSecretKey = Boolean(env.TURNSTILE_SECRET_KEY?.trim());
       return Response.json({
         contactEmail,
-        registrationEnabled: Boolean(contactEmail && env.DB && env.SIGNUP_RATE_LIMIT && hasSiteKey === hasSecretKey && env.PRIVACY_REVIEW_COMPLETE === 'true' && privacyNoticeReady),
-        privacyControllerIdentity,
-        privacyCndpDisclosure,
-        privacyTransferDisclosure,
+        registrationEnabled: Boolean(contactEmail && env.DB && env.SIGNUP_RATE_LIMIT && hasSiteKey === hasSecretKey && env.PRIVACY_REVIEW_COMPLETE === 'true'),
         turnstileSiteKey: hasSiteKey && hasSecretKey ? env.TURNSTILE_SITE_KEY!.trim() : '',
       }, { headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
     }
