@@ -40,7 +40,8 @@ Official: https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-l
 ## 5. Retention and lead hygiene
 - [x] Source has a daily 03:17 UTC scheduled handler deleting `early_access` leads older than 180 days.
 - [x] Operator confirmed the production Worker shows one trigger with cron `17 3 * * *` (daily 03:17 UTC).
-- [ ] Inspect a successful cron execution in Worker logs; trigger registration alone does not prove the scheduled cleanup has executed.
+- [x] Operator confirms Cloudflare Worker Observability / Workers Logs was enabled on 17 Nov 2026.
+- [ ] Inspect Cron Events or Workers Logs for a **successful** scheduled invocation; enabling logs alone does not prove cleanup execution. Cloudflare dashboard: Worker → Settings → Trigger Events → View events (past cron), or Worker → Observability → Logs (new event records).
 - [ ] Run read-only D1 SQL: `SELECT COUNT(*) AS expired_count FROM early_access WHERE datetime(created_at) < datetime('now','-180 days');`. With new data, 0 is expected but is **not** proof the scheduler ran.
 - [ ] Identify and remove only confirmed test registrations by verified exact email / ID; avoid blanket DELETEs.
 - [ ] Confirm scope of D1 Time Travel and provider backups; a SQL DELETE does not instantly purge backup history.
