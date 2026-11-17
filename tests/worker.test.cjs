@@ -11,15 +11,22 @@ new Function('exports', 'require', 'Response', 'URL', outputText)(
 const worker = moduleExports.default;
 const assets = { fetch: async () => new Response('site html', { status: 200 }) };
 const rateLimiter = { limit: async ({ key }) => { assert.ok(key); return { success: true }; } };
+const publicPrivacy = { PUBLIC_CONTROLLER_IDENTITY: 'Responsable légal de test, Rabat', PUBLIC_CNDP_DISCLOSURE: 'Référence CNDP de test (non réelle)', PUBLIC_TRANSFER_DISCLOSURE: 'Information de test sur les transferts internationaux' };
+const emptyPrivacy = { privacyControllerIdentity: '', privacyCndpDisclosure: '', privacyTransferDisclosure: '' };
+const expectedPrivacy = {
+  privacyControllerIdentity: publicPrivacy.PUBLIC_CONTROLLER_IDENTITY,
+  privacyCndpDisclosure: publicPrivacy.PUBLIC_CNDP_DISCLOSURE,
+  privacyTransferDisclosure: publicPrivacy.PUBLIC_TRANSFER_DISCLOSURE,
+};
 function req(path, method = 'GET') {
   return new Request('https://maintiflow-landing.ahdahby.workers.dev' + path, { method, headers: { 'CF-Connecting-IP': '198.51.100.25' } });
 }
 test('API config denies signups until D1 and contact email configured', async () => {
   const unavailable = await worker.fetch(req('/api/config'), { ASSETS: assets });
-  assert.deepEqual(await unavailable.json(), { contactEmail: '', registrationEnabled: false, turnstileSiteKey: '' });
+  assert.deepEqual(await unavailable.json(), { contactEmail: '', registrationEnabled: false, turnstileSiteKey: '', ...emptyPrivacy });
   assert.equal(unavailable.headers.get('cache-control'), 'no-store');
-  const configured = await worker.fetch(req('/api/config'), { ASSETS: assets, DB: {}, SIGNUP_RATE_LIMIT: rateLimiter, CONTACT_EMAIL: ' contact@maintiflow.ma ', PRIVACY_REVIEW_COMPLETE: 'true' });
-  assert.deepEqual(await configured.json(), { contactEmail: 'contact@maintiflow.ma', registrationEnabled: true, turnstileSiteKey: '' });
+  const configured = await worker.fetch(req('/api/config'), { ASSETS: assets, DB: {}, SIGNUP_RATE_LIMIT: rateLimiter, CONTACT_EMAIL: ' contact@maintiflow.ma ', PRIVACY_REVIEW_COMPLETE: 'true', ...publicPrivacy });
+  assert.deepEqual(await configured.json(), { contactEmail: 'contact@maintiflow.ma', registrationEnabled: true, turnstileSiteKey: '', ...expectedPrivacy });
 });
 test('API handles unknown routes and wrong methods', async () => {
   assert.equal((await worker.fetch(req('/api/missing'), { ASSETS: assets })).status, 404);
@@ -36,7 +43,7 @@ test('half configured Turnstile blocks registration', async () => {
     ASSETS: assets, DB: {}, CONTACT_EMAIL: 'maintiflow.contact@gmail.com', TURNSTILE_SITE_KEY: 'site-key',
   });
   assert.deepEqual(await response.json(), {
-    contactEmail: 'maintiflow.contact@gmail.com', registrationEnabled: false, turnstileSiteKey: '',
+    contactEmail: 'maintiflow.contact@gmail.com', registrationEnabled: false, turnstileSiteKey: '', ...emptyPrivacy,
   });
 });
 test('scheduled cleanup deletes only expired leads and logs aggregate count', async () => {
@@ -101,4 +108,22 @@ test('API config remains disabled without rate-limit binding, even with DB and p
     PRIVACY_REVIEW_COMPLETE: 'true',
   });
   assert.equal((await response.json()).registrationEnabled, false);
+});
+
+test('API config denies signup if legally required public disclosures are missing', async () => {
+  const env = { ASSETS: assets, DB: {}, SIGNUP_RATE_LIMIT: rateLimiter, CONTACT_EMAIL: 'maintiflow.contact@gmail.com', PRIVACY_REVIEW_COMPLETE: 'true' };
+  const res = await worker.fetch(req('/api/config'), env);
+  assert.equal((await res.json()).registrationEnabled, false);
+});
+
+test('public disclosure variables are plain text and exposed only as validated text in config', async () => {
+  const res = await worker.fetch(req('/api/config'), {
+    ASSETS: assets, DB: {}, SIGNUP_RATE_LIMIT: rateLimiter,
+    CONTACT_EMAIL: 'maintiflow.contact@gmail.com', PRIVACY_REVIEW_COMPLETE: 'true', ...publicPrivacy,
+  });
+  const config = await res.json();
+  assert.equal(config.registrationEnabled, true);
+  assert.equal(config.privacyControllerIdentity, publicPrivacy.PUBLIC_CONTROLLER_IDENTITY);
+  assert.equal(config.privacyCndpDisclosure, publicPrivacy.PUBLIC_CNDP_DISCLOSURE);
+  assert.equal(config.privacyTransferDisclosure, publicPrivacy.PUBLIC_TRANSFER_DISCLOSURE);
 });

@@ -22,8 +22,18 @@ const initial: FormState = {
   fullName: '', email: '', company: '', city: '', teamSize: '', challenge: '', consent: false, website: '',
 };
 
-type PublicConfig = { contactEmail: string; registrationEnabled: boolean; turnstileSiteKey: string };
-const defaultConfig: PublicConfig = { contactEmail: '', registrationEnabled: false, turnstileSiteKey: '' };
+type PublicConfig = {
+  contactEmail: string;
+  registrationEnabled: boolean;
+  turnstileSiteKey: string;
+  privacyControllerIdentity: string;
+  privacyCndpDisclosure: string;
+  privacyTransferDisclosure: string;
+};
+const defaultConfig: PublicConfig = {
+  contactEmail: '', registrationEnabled: false, turnstileSiteKey: '',
+  privacyControllerIdentity: '', privacyCndpDisclosure: '', privacyTransferDisclosure: '',
+};
 
 const features = [
   { Icon: CalendarCheck2, label: 'Planification préventive', text: 'Une vision claire des visites à réaliser pour chaque contrat et chaque site.', tag: 'Évitez les oublis' },
@@ -205,7 +215,14 @@ export default function App() {
       })
       .then(data => {
         if (!controller.signal.aborted && typeof data.contactEmail === 'string') {
-          setConfig({ contactEmail: data.contactEmail, registrationEnabled: data.registrationEnabled === true, turnstileSiteKey: typeof data.turnstileSiteKey === 'string' ? data.turnstileSiteKey : '' });
+          setConfig({
+            contactEmail: data.contactEmail,
+            registrationEnabled: data.registrationEnabled === true,
+            turnstileSiteKey: typeof data.turnstileSiteKey === 'string' ? data.turnstileSiteKey : '',
+            privacyControllerIdentity: typeof data.privacyControllerIdentity === 'string' ? data.privacyControllerIdentity : '',
+            privacyCndpDisclosure: typeof data.privacyCndpDisclosure === 'string' ? data.privacyCndpDisclosure : '',
+            privacyTransferDisclosure: typeof data.privacyTransferDisclosure === 'string' ? data.privacyTransferDisclosure : '',
+          });
         }
       })
       .catch(() => { /* Fail closed: do not accept registrations without backend configuration. */ });
@@ -276,7 +293,11 @@ export default function App() {
 
           <section className="faq-section section-pad" id="faq" aria-labelledby="faq-title"><div className="container faq-grid"><div><span className="eyebrow">QUESTIONS FRÉQUENTES</span><h2 id="faq-title">L’essentiel,<br/><span>sans détour.</span></h2><p>Tout ce qu’il faut savoir sur ce projet en cours de validation.</p></div><div className="faq-list">{faqs.map(({q,a})=><details key={q}><summary>{q}<span><ChevronDown size={19}/></span></summary><p>{a}</p></details>)}</div></div></section>
         </main>
-        <footer className="footer" id="confidentialite"><div className="container"><div className="footer-row"><Logo/><span>La maintenance mérite mieux que des fichiers éparpillés.</span><a href="#accueil">Haut de page ↑</a></div><div className="privacy"><h3>Confidentialité & données personnelles</h3>{!canCollect && <p><strong>Les nouvelles inscriptions sont temporairement suspendues pendant notre revue de conformité.</strong></p>}<p>MaintiFlow est un projet en phase de validation au Maroc. Les données du formulaire (nom, email, entreprise, ville, taille d’équipe, principal défi) sont collectées uniquement pour étudier votre demande d’accès pilote et vous répondre. Pas de revente ni d’inscription automatique à une newsletter.</p><p>Les demandes sont enregistrées sur Cloudflare D1 et conservées au maximum 180 jours, avec une suppression automatique quotidienne prévue. Les alertes email, lorsqu’elles sont activées, ne contiennent que la référence de l’inscription, sans coordonnées personnelles. La conservation et l’accès restent soumis aux obligations légales applicables.</p><p>Vous pouvez demander l’accès, la rectification ou la suppression de vos données en contactant {canCollect?<a href={`mailto:${contactEmail}`}>{contactEmail}</a>:<strong>l’adresse de contact à configurer avant ouverture des inscriptions</strong>}. Une vérification raisonnable de votre identité peut être demandée. L’identité légale du responsable du traitement et les formalités CNDP applicables doivent être finalisées avant toute campagne commerciale.</p><p>MaintiFlow est un nom de projet. Ce site présente une solution en préparation, pas un service déjà commercialisé.</p></div><div className="footer-bottom"><span>© {new Date().getFullYear()} MaintiFlow — Projet en validation au Maroc.</span><span>Fait pour les équipes qui font avancer le terrain.</span></div></div></footer>
+        <footer className="footer" id="confidentialite"><div className="container"><div className="footer-row"><Logo/><span>La maintenance mérite mieux que des fichiers éparpillés.</span><a href="#accueil">Haut de page ↑</a></div><div className="privacy"><h3>Confidentialité & données personnelles</h3>{!canCollect && <p><strong>Les nouvelles inscriptions sont temporairement suspendues pendant notre revue de conformité.</strong></p>}<p>MaintiFlow est un projet en phase de validation au Maroc. Les données du formulaire (nom, email, entreprise, ville, taille d’équipe, principal défi) sont collectées uniquement pour étudier votre demande d’accès pilote et vous répondre. Pas de revente ni d’inscription automatique à une newsletter.</p><p>Les demandes sont enregistrées sur Cloudflare D1 et conservées au maximum 180 jours, avec une suppression automatique quotidienne prévue. Les alertes email, lorsqu’elles sont activées, ne contiennent que la référence de l’inscription, sans coordonnées personnelles. La conservation et l’accès restent soumis aux obligations légales applicables.</p><p>Vous pouvez demander l’accès, la rectification ou la suppression de vos données en contactant {canCollect?<a href={`mailto:${contactEmail}`}>{contactEmail}</a>:<strong>l’adresse de contact à configurer avant ouverture des inscriptions</strong>}. Une vérification raisonnable de votre identité peut être demandée.</p>
+          <p><strong>Responsable du traitement :</strong> {config.privacyControllerIdentity || 'Identité non publiée. Les demandes d’accès pilote sont suspendues.'}</p>
+          <p><strong>Formalités CNDP :</strong> {config.privacyCndpDisclosure || 'Référence ou statut légal non publié. Les demandes d’accès pilote sont suspendues.'}</p>
+          <p><strong>Hébergement et transferts de données :</strong> {config.privacyTransferDisclosure || 'Informations non publiées. Les demandes d’accès pilote sont suspendues.'}</p>
+          <p>MaintiFlow est un nom de projet. Ce site présente une solution en préparation, pas un service déjà commercialisé.</p></div><div className="footer-bottom"><span>© {new Date().getFullYear()} MaintiFlow — Projet en validation au Maroc.</span><span>Fait pour les équipes qui font avancer le terrain.</span></div></div></footer>
       </div>
     </>
   );

@@ -59,3 +59,12 @@ The operator is an individual, not a registered company. A privacy/CNDP review i
 The proposed `SIGNUP_RATE_LIMIT` Cloudflare Worker-native binding throttles `POST /api/early-access` to **10 attempts per client IP per 60 seconds per Cloudflare location**. It runs before Turnstile and D1. Workers Rate Limiting is approximate/eventually consistent, not an abuse-proof global cap. A missing binding or trusted CF-Connecting-IP fails signup closed (503); throttling returns 429 with Retry-After: 60. The binding namespace ID in wrangler.jsonc is a user-chosen integer label, **not a secret or an existing allocated Cloudflare object**.
 
 **Do not merge or deploy this branch until you have added the actual `maintiflow-leads` D1 UUID to `wrangler.jsonc` and confirmed binding preservation.** The main branch and live Worker remain unchanged. See `docs/PRODUCTION_RELEASE_CHECKLIST.md`.
+
+## Public privacy notice fields — required before merging this PR
+The 17 Nov live privacy text still says the legal controller identity/CNDP formalities "must be finalized" while signups are open. To replace that placeholder **without committing the natural person's identifying details to GitHub**, configure three **public** Worker text variables in Cloudflare Dashboard → Worker → Settings → Variables and Secrets:
+
+- `PUBLIC_CONTROLLER_IDENTITY`: true and legally sufficient identification of the real natural-person data controller (include the required legal contact/address details as advised). This **will appear on the public website**.
+- `PUBLIC_CNDP_DISCLOSURE`: accurate CNDP receipt/declaration/authorization reference, or any legally applicable status after advice; never invent a number.
+- `PUBLIC_TRANSFER_DISCLOSURE`: truthful information about Cloudflare D1 storage, other relevant subprocessors, backup location and any applicable international transfers/authorization.
+
+These values are returned in public `/api/config` and rendered into the footer. **They are not secrets**; do not put identity documents, ID numbers or unapproved personal particulars in them. The signup GET and POST endpoints fail closed until all three are nonempty and within validated lengths, in addition to `PRIVACY_REVIEW_COMPLETE=true`. Text presence does not prove a legal filing is valid. Set them and verify the visible notice **before** merging/deploying; otherwise signups will be paused after release.
