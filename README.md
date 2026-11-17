@@ -54,3 +54,8 @@ To verify the live deployment:
 
 ## Compliance hold: intentional signup pause (17 Nov 2026)
 The operator is an individual, not a registered company. A privacy/CNDP review is outstanding. To avoid collecting additional data before required formalities and correct controller identification are in place, the signup code now requires an explicit Worker text variable **`PRIVACY_REVIEW_COMPLETE=true`**. If unset (the safe default), both /api/config and the signup endpoint deny new leads while the static website continues serving. Restore only after the real controller details, applicable CNDP treatment/transfer formalities, published notice, and security checks have been completed. See `docs/CNDP_FILING_PACK.md` and `docs/PRIVACY_NOTICE_DRAFT_FR.md`. This gate does not delete existing D1 records.
+
+## Release hardening proposal — rate limiter (feature branch)
+The proposed `SIGNUP_RATE_LIMIT` Cloudflare Worker-native binding throttles `POST /api/early-access` to **10 attempts per client IP per 60 seconds per Cloudflare location**. It runs before Turnstile and D1. Workers Rate Limiting is approximate/eventually consistent, not an abuse-proof global cap. A missing binding or trusted CF-Connecting-IP fails signup closed (503); throttling returns 429 with Retry-After: 60. The binding namespace ID in wrangler.jsonc is a user-chosen integer label, **not a secret or an existing allocated Cloudflare object**.
+
+**Do not merge or deploy this branch until you have added the actual `maintiflow-leads` D1 UUID to `wrangler.jsonc` and confirmed binding preservation.** The main branch and live Worker remain unchanged. See `docs/PRODUCTION_RELEASE_CHECKLIST.md`.

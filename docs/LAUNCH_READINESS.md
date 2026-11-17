@@ -49,3 +49,8 @@ Review weekly: qualified opt-ins, meaningful replies, interview bookings, willin
 The operator has confirmed that MaintiFlow is run as an individual without a registered company. Actual legal name and address are intentionally not included in this **public repository**. No CNDP declaration, receipt or transfer approval has been verified.
 
 See `docs/PRIVACY_NOTICE_DRAFT_FR.md` (NOT approved for publication) and `docs/CNDP_FILING_PACK.md` for a natural-person filing checklist. The backend now requires `PRIVACY_REVIEW_COMPLETE=true` to accept new leads. Until the formalities are reviewed and approved, keep this variable unset to pause new personal-data collection while the landing site stays visible. Never publish a placeholder CNDP reference.
+
+## 17 November QA evidence (user confirmed)
+The operator reports a successful production **Turnstile → D1 insert → Resend → MaintiFlow Gmail** test. Treat this as end-to-end functional evidence. Real rate-limit enforcement, scheduled retention, D1 binding durability and published final controller notice **remain unverified**. The operator states CNDP documentation has been received, but no filing reference or production privacy notice has been inspected; retain issue #1 open pending a private records check, without asking for identity documents in this public repository.
+
+The separate `feature/signup-rate-limit` branch contains a proposed Worker-native limiter. **Do not merge before the real D1 UUID is added to Wrangler.** See `docs/PRODUCTION_RELEASE_CHECKLIST.md`.
