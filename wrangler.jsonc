@@ -4,6 +4,13 @@
   "main": "./worker/index.ts",
   "compatibility_date": "2026-11-16",
   "keep_vars": true,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "maintiflow-leads",
+      "database_id": "f91ca6da-6154-459a-803f-e575f4b6ed91"
+    }
+  ],
   "ratelimits": [
     {
       "name": "SIGNUP_RATE_LIMIT",
@@ -18,5 +25,4 @@
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/api/*"]
   }
-  // Add the real D1 database UUID (maintiflow-leads) once retrieved; do not add a fake ID.
 }
