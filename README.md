@@ -51,3 +51,6 @@ To verify the live deployment:
 2. Submit a new test lead.
 3. Check D1: SELECT id,email,company,created_at FROM early_access ORDER BY created_at DESC LIMIT 10;
 4. If notifications are configured, check Gmail and Resend Logs.
+
+## Compliance hold: intentional signup pause (17 Nov 2026)
+The operator is an individual, not a registered company. A privacy/CNDP review is outstanding. To avoid collecting additional data before required formalities and correct controller identification are in place, the signup code now requires an explicit Worker text variable **`PRIVACY_REVIEW_COMPLETE=true`**. If unset (the safe default), both /api/config and the signup endpoint deny new leads while the static website continues serving. Restore only after the real controller details, applicable CNDP treatment/transfer formalities, published notice, and security checks have been completed. See `docs/CNDP_FILING_PACK.md` and `docs/PRIVACY_NOTICE_DRAFT_FR.md`. This gate does not delete existing D1 records.

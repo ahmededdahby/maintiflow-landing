@@ -17,7 +17,7 @@ test('API config denies signups until D1 and contact email configured', async ()
   const unavailable = await worker.fetch(req('/api/config'), { ASSETS: assets });
   assert.deepEqual(await unavailable.json(), { contactEmail: '', registrationEnabled: false, turnstileSiteKey: '' });
   assert.equal(unavailable.headers.get('cache-control'), 'no-store');
-  const configured = await worker.fetch(req('/api/config'), { ASSETS: assets, DB: {}, CONTACT_EMAIL: ' contact@maintiflow.ma ' });
+  const configured = await worker.fetch(req('/api/config'), { ASSETS: assets, DB: {}, CONTACT_EMAIL: ' contact@maintiflow.ma ', PRIVACY_REVIEW_COMPLETE: 'true' });
   assert.deepEqual(await configured.json(), { contactEmail: 'contact@maintiflow.ma', registrationEnabled: true, turnstileSiteKey: '' });
 });
 test('API handles unknown routes and wrong methods', async () => {
@@ -46,4 +46,11 @@ test('scheduled cleanup deletes only leads over 180 days old', async () => {
   assert.equal(sql.length, 1);
   assert.match(sql[0], /DELETE FROM early_access/);
   assert.match(sql[0], /-180 days/);
+});
+
+test('privacy review flag must be expressly enabled before collecting new leads', async () => {
+  const response = await worker.fetch(req('/api/config'), {
+    ASSETS: assets, DB: {}, CONTACT_EMAIL: 'maintiflow.contact@gmail.com',
+  });
+  assert.equal((await response.json()).registrationEnabled, false);
 });

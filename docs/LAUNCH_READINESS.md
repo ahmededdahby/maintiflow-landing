@@ -44,3 +44,8 @@ Review weekly: qualified opt-ins, meaningful replies, interview bookings, willin
 - Cloudflare Turnstile implementation: https://developers.cloudflare.com/turnstile/get-started/
 
 *This document is an operational checklist, not a legal opinion.*
+
+## 17 November update — natural person controller and reversible safety gate
+The operator has confirmed that MaintiFlow is run as an individual without a registered company. Actual legal name and address are intentionally not included in this **public repository**. No CNDP declaration, receipt or transfer approval has been verified.
+
+See `docs/PRIVACY_NOTICE_DRAFT_FR.md` (NOT approved for publication) and `docs/CNDP_FILING_PACK.md` for a natural-person filing checklist. The backend now requires `PRIVACY_REVIEW_COMPLETE=true` to accept new leads. Until the formalities are reviewed and approved, keep this variable unset to pause new personal-data collection while the landing site stays visible. Never publish a placeholder CNDP reference.

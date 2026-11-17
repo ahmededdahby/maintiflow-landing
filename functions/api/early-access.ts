@@ -1,6 +1,7 @@
 interface Env {
   DB?: D1Database;
   CONTACT_EMAIL?: string;
+  PRIVACY_REVIEW_COMPLETE?: string;
   RESEND_API_KEY?: string;
   RESEND_FROM?: string;
   TURNSTILE_SITE_KEY?: string;
@@ -111,7 +112,7 @@ export async function handleEarlyAccess(request: Request, env: Env, context?: Ba
 
   const hasSiteKey = Boolean(env.TURNSTILE_SITE_KEY?.trim());
   const hasSecretKey = Boolean(env.TURNSTILE_SECRET_KEY?.trim());
-  if (!env.DB || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((env.CONTACT_EMAIL ?? '').trim()) || hasSiteKey !== hasSecretKey) {
+  if (env.PRIVACY_REVIEW_COMPLETE !== 'true' || !env.DB || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((env.CONTACT_EMAIL ?? '').trim()) || hasSiteKey !== hasSecretKey) {
     // Critical: never claim a lead was stored when the D1 binding is absent.
     return Response.json({ ok: false, message: 'Les inscriptions ne sont pas encore disponibles. Réessayez plus tard.' }, { status: 503 });
   }

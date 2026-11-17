@@ -4,6 +4,7 @@ type Env = {
   ASSETS: Fetcher;
   DB?: D1Database;
   CONTACT_EMAIL?: string;
+  PRIVACY_REVIEW_COMPLETE?: string;
   RESEND_API_KEY?: string;
   RESEND_FROM?: string;
   TURNSTILE_SITE_KEY?: string;
@@ -25,7 +26,7 @@ export default {
       const hasSecretKey = Boolean(env.TURNSTILE_SECRET_KEY?.trim());
       return Response.json({
         contactEmail,
-        registrationEnabled: Boolean(contactEmail && env.DB && hasSiteKey === hasSecretKey),
+        registrationEnabled: Boolean(contactEmail && env.DB && hasSiteKey === hasSecretKey && env.PRIVACY_REVIEW_COMPLETE === 'true'),
         turnstileSiteKey: hasSiteKey && hasSecretKey ? env.TURNSTILE_SITE_KEY!.trim() : '',
       }, { headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
     }
