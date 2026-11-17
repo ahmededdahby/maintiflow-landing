@@ -39,14 +39,21 @@ test('half configured Turnstile blocks registration', async () => {
     contactEmail: 'maintiflow.contact@gmail.com', registrationEnabled: false, turnstileSiteKey: '',
   });
 });
-test('scheduled cleanup deletes only leads over 180 days old', async () => {
+test('scheduled cleanup deletes only expired leads and logs aggregate count', async () => {
   const sql = [];
-  await worker.scheduled({}, {
-    DB: { prepare(query) { sql.push(query); return { run: async () => ({}) }; } },
-  });
+  const original = console.log, logs = [];
+  console.log = (...parts) => logs.push(parts);
+  try {
+    await worker.scheduled({}, {
+      DB: { prepare(query) { sql.push(query); return { run: async () => ({ meta: { changes: 3 } }) }; } },
+    });
+  } finally { console.log = original; }
   assert.equal(sql.length, 1);
   assert.match(sql[0], /DELETE FROM early_access/);
   assert.match(sql[0], /-180 days/);
+  assert.equal(logs.length, 1);
+  assert.equal(logs[0][0], 'Lead retention cleanup completed');
+  assert.deepEqual(logs[0][1], { deletedRows: 3 });
 });
 
 test('privacy review flag must be expressly enabled before collecting new leads', async () => {
