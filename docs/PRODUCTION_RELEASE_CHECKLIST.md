@@ -12,7 +12,7 @@ Updated 17 Nov 2026. The product is **in validation**, not a finished SaaS. This
 - [x] Owner states they operate as a **natural person**, without a registered company.
 - [x] Owner states they received the relevant CNDP paperwork; reference/scope/transfer approval not independently verified.
 - [ ] Keep CNDP registration/receipt, applicable foreign-transfer record, processing-country information and cloud processor terms in a **private** document folder, not the repo.
-- [ ] Replace the published footer sentence about identity "must be finalized" with the **real and accurately stated controller identity**, legal contact and applicable filing reference. Review final text against CNDP paperwork; never invent identifiers or copy private ID docs into this public repo.
+- [ ] **Operator reports final notice is published, but live page couldn't be fetched and GitHub footer still contains outdated identity wording:** reconcile the deployed page/source; replace the published footer sentence about identity "must be finalized" with the **real and accurately stated controller identity**, legal contact and applicable filing reference. Review final text against CNDP paperwork; never invent identifiers or copy private ID docs into this public repo.
 - [ ] Confirm the actual Cloudflare D1 hosting locations, Resend processing and backup/retention implications fit the filed transfer/notification scope.
 - [ ] Confirm `PRIVACY_REVIEW_COMPLETE=true` matches the real completed review; presence of the variable is **not** independent proof of compliance.
 - [ ] Review privacy requests workflow (access, correction, deletion, opt-out) for `maintiflow.contact@gmail.com` and response ownership.
@@ -20,8 +20,8 @@ Updated 17 Nov 2026. The product is **in validation**, not a finished SaaS. This
 Official: https://www.cndp.ma/conformite-des-sites-web/ and https://www.cndp.ma/transfert-de-donnees-a-letranger/ .
 
 ## 3. Binding safety — MUST fix before next Wrangler deploy
-- [ ] Open Cloudflare Dashboard → D1 → **maintiflow-leads** → copy the **actual** Database UUID; this is an identifier, not an API token.
-- [ ] Add at top level in wrangler.jsonc: `"d1_databases": [{"binding":"DB","database_name":"maintiflow-leads","database_id":"REAL_UUID"}]`.
+- [x] Operator confirmed the existing **maintiflow-leads** D1 UUID is `f91ca6da-6154-459a-803f-e575f4b6ed91` (operator confirmation, not independently inspected).
+- [x] Added top-level `d1_databases` entry for binding `DB` / existing `maintiflow-leads` on this feature branch; Wrangler deploy dry-run passed.
 - [ ] In Cloudflare Worker → Bindings confirm `DB` points to the original database; do **not** create a replacement.
 - [ ] Save a backup/export of D1 before migrations; protect the export as personal data.
 - [ ] After the next safe deploy, check `/api/config` returns `registrationEnabled:true`, and submit a distinct **test** lead.
