@@ -66,6 +66,8 @@ export default {
       console.error('Lead retention cleanup skipped: DB binding missing');
       return;
     }
-    await env.DB.prepare("DELETE FROM early_access WHERE datetime(created_at) < datetime('now', '-180 days')").run();
+    const result = await env.DB.prepare("DELETE FROM early_access WHERE datetime(created_at) < datetime('now', '-180 days')").run();
+    // Only aggregate counts are logged; never log prospective customer information.
+    console.log('Lead retention cleanup completed', { deletedRows: result.meta?.changes ?? 0 });
   },
 } satisfies ExportedHandler<Env>;
