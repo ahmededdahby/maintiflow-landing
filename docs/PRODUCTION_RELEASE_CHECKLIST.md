@@ -29,9 +29,9 @@ Official: https://www.cndp.ma/conformite-des-sites-web/ and https://www.cndp.ma/
 Official: https://developers.cloudflare.com/workers/wrangler/configuration/ .
 
 ## 3a. Secrets hygiene — SECURITY BLOCKER (observed in Cloudflare dashboard)
-- [ ] Convert **RESEND_API_KEY** and **TURNSTILE_SECRET_KEY** from plaintext Worker **Variable** type to encrypted **Secret** bindings. The 17 Nov settings screenshot shows both currently typed `Variable`, with partially visible values. Never copy any full value into a public issue or Git repository.
+- [x] **Operator reports** both `RESEND_API_KEY` and `TURNSTILE_SECRET_KEY` have been changed from text Variables to encrypted Worker Secrets on 17 Nov 2026. Type not independently verified by current screenshot. Do not post secret values.
 - [ ] Rotate the old Resend API credential and Turnstile secret using the provider dashboards; apply valid replacement Secrets and deploy safely, then revoke superseded credentials. Prefer making the replacement/rotation in a maintenance window to avoid unnecessary signup interruption.
-- [ ] Retest a new Turnstile-protected signup → same D1 database → Gmail alert after rotation. `TURNSTILE_SITE_KEY`, `CONTACT_EMAIL`, `RESEND_FROM` and `PRIVACY_REVIEW_COMPLETE` may remain ordinary text Variables.
+- [ ] Retest a new Turnstile-protected signup → same D1 database → Gmail alert **after secret-binding migration**, and again if credentials are rotated. `TURNSTILE_SITE_KEY`, `CONTACT_EMAIL`, `RESEND_FROM` and `PRIVACY_REVIEW_COMPLETE` may remain ordinary text Variables.
 
 Official: https://developers.cloudflare.com/workers/configuration/secrets/ .
 
